@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ConciliaSmart AI - Plataforma Automatizada de Conciliación</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* VARIABLES MODO OSCURO (Por defecto) */
+:root {
+  --bg: #0b0f19; --panel: #131926; --panel2: #1c2536; --border: #2e394e;
+  --text: #f3f4f6; --muted: #9ca3af;
+  --primary: #801b38; --primary-hover: #a12348;
+  --mint: #10b981; --mint-bg: rgba(19, 139, 25, 0.15);
+  --cyan: #06b6d4; --cyan-bg: rgba(6,182,212,.15);
+  --wine: #f43f5e; --wine-bg: rgba(244,63,94,.15);
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+/* VARIABLES MODO CLARO */
+body.light-mode {
+  --bg: #f3f4f6; --panel: #ffffff; --panel2: #e5e7eb; --border: #d1d5db;
+  --text: #111827; --muted: #6b7280;
+  --mint: #059669; --mint-bg: rgba(5,150,105,.1);
+  --cyan: #0891b2; --cyan-bg: rgba(8,145,178,.1);
+  --wine: #e11d48; --wine-bg: rgba(225,29,72,.1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;transition:background .3s,color .3s}
+.hidden{display:none!important}
+.app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+aside{background:var(--panel);border-right:1px solid var(--border);padding:24px 16px;display:flex;flex-direction:column;gap:12px;transition:background .3s}
+.logo{font-size:20px;font-weight:800;padding:0 8px 8px}.logo b{color:var(--wine)}
+.eyebrow{color:var(--muted);font-size:11px;font-weight:700;letter-spacing:1px;margin-top:10px;padding:0 8px}
+.company,.nav-item{width:100%;border:1px solid transparent;border-radius:8px;padding:10px 12px;color:var(--muted);background:transparent;text-align:left;font-size:13px;font-weight:500;cursor:pointer;transition:.2s}
+.company small{display:block;font-size:11px;opacity:.7;margin-top:2px;pointer-events:none}
+.company.active{background:var(--panel2);border-color:var(--border);color:var(--text)}
+.nav-item:hover,.nav-item.active{background:var(--panel2);color:var(--text)}
+:focus-visible{outline:2px solid var(--wine);outline-offset:2px}
+.company-row{display:flex;gap:4px;align-items:stretch}.company-row .company{flex:1}
+.del{border:1px solid transparent;background:transparent;color:var(--muted);border-radius:8px;padding:0 10px;cursor:pointer}
+.del:hover{color:var(--wine);border-color:var(--wine)}
+#btn-new-company{margin:2px 8px 0}
+main{display:flex;flex-direction:column;min-width:0}
+header{padding:18px 32px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;transition:background .3s}
+header h1{font-size:20px}header p{font-size:12px;color:var(--muted);margin-top:2px}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--primary);display:grid;place-items:center;font-weight:700;color:#fff}
+.user-profile{display:flex;align-items:center;gap:12px;font-size:13px}
+.content{padding:28px 32px}
+.btn{border:none;border-radius:6px;padding:10px 16px;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s}
+.btn:hover:not(:disabled){background:var(--primary-hover)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.secondary{background:var(--panel2);border:1px solid var(--border);color:var(--text)}
+.btn.small{padding:4px 8px;font-size:11px}
+input,select{background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--text);font-size:13px;width:100%}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end;margin-bottom:20px}
+.toolbar label{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.toolbar input,.toolbar select{width:auto}.toolbar input{width:90px}
+.uploads-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
+.drop-zone{padding:24px;background:var(--panel);border:2px dashed var(--border);border-radius:8px;text-align:center;transition:.2s}
+.drop-zone.over{border-color:var(--wine);background:var(--wine-bg)}
+.drop-zone strong{display:block;font-size:15px;margin-bottom:6px}
+.drop-zone p{font-size:12px;color:var(--muted);margin-bottom:14px}
+.drop-zone .file{display:block;font-size:12px;color:var(--mint);margin-top:10px}
+.workspace-grid{display:grid;grid-template-columns:1fr 320px;gap:20px}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:background .3s}
+.panel-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.panel-head h3{font-size:15px}.panel-head span{font-size:12px;color:var(--muted)}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--panel2);color:var(--muted);padding:12px 16px;text-align:left;font-size:11px;white-space:nowrap}
+td{padding:12px 16px;border-top:1px solid var(--border)}
+.r{text-align:right}
+tr.status-exact{background:var(--mint-bg)}tr.status-ai{background:var(--cyan-bg)}tr.status-unmatched{background:var(--wine-bg)}
+.empty{text-align:center;color:var(--muted);padding:32px}
+.badge{display:inline-block;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge.exact{background:var(--mint);color:#fff}.badge.ai{background:var(--cyan);color:#000}.badge.unmatched{background:var(--wine);color:#fff}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;place-items:center;z-index:100}
+.modal-backdrop.open{display:grid}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:24px;width:min(450px,90vw)}
+.err{color:var(--wine);font-size:12px;min-height:16px;margin-top:8px}
+.alert{padding:12px 16px;border-radius:6px;background:var(--cyan-bg);border:1px solid var(--cyan);color:var(--text);font-size:13px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+#toast{position:fixed;bottom:20px;right:20px;background:var(--panel2);border:1px solid var(--border);padding:12px 16px;border-radius:6px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:200;max-width:320px;color:var(--text)}
+#toast.show{opacity:1}
+.summary{display:flex;gap:24px;flex-wrap:wrap;margin:16px 0;font-size:13px;color:var(--muted)}
+.summary b{display:block;font-size:22px;color:var(--text)}
+.theme-btn{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:20px;padding:8px;border-radius:50%;transition:0.2s}
+.theme-btn:hover{background:var(--panel2);color:var(--text)}
+@media(max-width:900px){.app{grid-template-columns:1fr}aside{flex-direction:row;flex-wrap:wrap;align-items:center;padding:12px;border-right:0;border-bottom:1px solid var(--border)}.eyebrow{display:none}.company-list{display:flex;gap:6px;flex-wrap:wrap}.company,.nav-item{width:auto}.uploads-grid,.workspace-grid{grid-template-columns:1fr}.content,header{padding-left:16px;padding-right:16px}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen" style="position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+  <div id="form-login" class="panel" style="padding:40px;width:360px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,0.5); border-radius:12px;">
+    <h1 style="font-size:24px;margin-bottom:8px;color:var(--text);">Concilia<b>Smart</b> AI</h1>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:24px;">Ingresa a tu cuenta</p>
+    <input type="text" id="login-user" placeholder="Usuario" style="margin-bottom:12px; text-align:center; padding:12px;">
+    <input type="password" id="login-pass" placeholder="Contraseña" style="margin-bottom:20px; text-align:center; padding:12px;">
+    <button class="btn" style="width:100%; padding:12px; font-size:14px;" onclick="verificarLogin()">Ingresar al Sistema</button>
+    <div id="login-err" class="err" style="margin-top:12px;"></div>
+    <div style="margin-top:20px; font-size:13px; color:var(--muted);">¿No tienes cuenta? <a href="#" onclick="toggleAuthForms()" style="color:var(--wine); text-decoration:none; font-weight:bold;">Regístrate aquí</a></div>
+  </div>
+
+  <div id="form-register" class="panel hidden" style="padding:40px;width:360px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,0.5); border-radius:12px;">
+    <h1 style="font-size:24px;margin-bottom:8px;color:var(--text);">Crear una cuenta</h1>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:24px;">Regístrate para usar ConciliaSmart AI</p>
+    <input type="text" id="reg-user" placeholder="Nuevo Usuario" style="margin-bottom:12px; text-align:center; padding:12px;">
+    <input type="password" id="reg-pass" placeholder="Contraseña" style="margin-bottom:20px; text-align:center; padding:12px;">
+    <button class="btn" style="width:100%; padding:12px; font-size:14px;" onclick="registrarUsuario()">Crear Cuenta</button>
+    <div id="reg-err" class="err" style="margin-top:12px;"></div>
+    <div style="margin-top:20px; font-size:13px; color:var(--muted);">¿Ya tienes cuenta? <a href="#" onclick="toggleAuthForms()" style="color:var(--wine); text-decoration:none; font-weight:bold;">Inicia Sesión</a></div>
+  </div>
+</div>
+
+<!-- APP PRINCIPAL -->
+<div class="app">
+<aside>
+  <div class="logo">Concilia<b>Smart</b> AI</div>
+  <div class="eyebrow">Empresas</div>
+  <div class="company-list" id="company-list"></div>
+  <button class="btn secondary" id="btn-new-company">+ Nueva empresa</button>
+  <div class="eyebrow">Módulos</div>
+  <button class="nav-item active" data-target="view-reconciliation">Mesa de Conciliación</button>
+  <button class="nav-item" data-target="view-directory">Directorio de Terceros</button>
+  <button class="nav-item" data-target="view-reports">Reportes y Cierres</button>
+</aside>
+<main>
+  <header>
+    <div><h1 id="view-title">Mesa de Conciliación</h1><p id="period-display"></p></div>
+    <div class="user-profile">
+      <button class="theme-btn" id="btn-theme" title="Cambiar tema">🌙</button>
+      <span id="current-username">Administrador</span>
+      <div class="avatar" id="current-avatar">A</div>
+    </div>
+  </header>
+
+  <section class="content view" id="view-reconciliation">
+    <div id="nit-alert" class="alert hidden">
+      <span id="nit-alert-text"></span>
+      <button class="btn" id="btn-auto-add-nit">Agregar tercero</button>
+    </div>
+    <div class="uploads-grid">
+      <div class="drop-zone" id="drop-bank">
+        <strong>Extracto bancario</strong>
+        <p>Arrastra o selecciona el extracto en Excel/CSV</p>
+        <button class="btn" data-pick="file-bank">Cargar extracto</button>
+        <input type="file" id="file-bank" accept=".xlsx,.xls,.csv" hidden>
+        <span class="file" id="name-bank"></span>
+      </div>
+      <div class="drop-zone" id="drop-ledger">
+        <strong>Registros contables</strong>
+        <p>Arrastra o selecciona el libro auxiliar contable</p>
+        <button class="btn" data-pick="file-ledger">Cargar contabilidad</button>
+        <input type="file" id="file-ledger" accept=".xlsx,.xls,.csv" hidden>
+        <span class="file" id="name-ledger"></span>
+      </div>
+    </div>
+    <div class="toolbar">
+      <label>Tolerancia ($) <input type="number" id="tol" value="5000" min="0" step="500"></label>
+      <label>Ver <select id="filter"><option value="all">Todos</option><option value="exact">Conciliados</option><option value="ai">Sugerencias IA</option><option value="unmatched">Sin conciliar</option></select></label>
+      <button class="btn" id="btn-run-ai">✨ Ejecutar conciliación IA</button>
+    </div>
+    <div class="workspace-grid">
+      <div class="panel">
+        <div class="panel-head"><h3>Movimientos procesados</h3><span id="record-count">0 movimientos</span></div>
+        <div class="table-wrap"><table id="table-reconciliation">
+          <thead><tr><th>Fecha</th><th>NIT / Tercero</th><th class="r">Banco</th><th class="r">Contabilidad</th><th class="r">Diferencia</th><th>Estado IA</th></tr></thead>
+          <tbody></tbody></table></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Avance de conciliación</h3></div>
+        <div style="padding:20px"><canvas id="chart-stats"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="content view hidden" id="view-directory">
+    <div class="panel">
+      <div class="panel-head"><h3>Directorio de terceros y NITs</h3><button class="btn" id="btn-open-modal-third">+ Nuevo tercero</button></div>
+      <div class="table-wrap"><table id="table-directory">
+        <thead><tr><th>Razón social</th><th>NIT</th><th>Tipo</th><th>Estado</th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <section class="content view hidden" id="view-reports">
+    <div class="panel" style="padding:24px; margin-bottom: 20px;">
+      <h3>Cierre mensual y reportes</h3>
+      <p style="color:var(--muted);margin:8px 0;font-size:13px">Exporta el resultado o confirma el cierre contable del periodo.</p>
+      <div class="summary" id="summary"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn secondary" id="btn-export">Exportar a Excel</button>
+        <button class="btn" id="btn-close-month">🔒 Bloquear y cerrar periodo</button>
+      </div>
+    </div>
+
+    <div class="panel" style="padding:24px; border-left: 4px solid var(--cyan);">
+      <h3 style="margin-bottom: 10px;">✨ Análisis Ejecutivo IA</h3>
+      <p id="reporte-ia-texto" style="font-size: 14px; color: var(--muted); line-height: 1.6; font-style: italic; margin-bottom: 15px;">Haz clic en el botón para que la IA genere un resumen profesional de este cierre contable.</p>
+      <button class="btn" id="btn-generar-reporte" style="background: var(--cyan); color: #000;">Generar Reporte IA</button>
+    </div>
+  </section>
+</main>
+</div>
+
+<!-- MODALES -->
+<div class="modal-backdrop" id="modal-third-party">
+  <div class="modal">
+    <h3 style="margin-bottom:16px">Registrar tercero</h3>
+    <div style="display:grid;gap:12px">
+      <input id="input-nit" placeholder="NIT (ej. 900.000.000-1)">
+      <input id="input-name" placeholder="Razón social">
+      <select id="select-type"><option>Proveedor</option><option>Cliente</option><option>Entidad Financiera</option></select>
+    </div>
+    <div class="err" id="modal-err"></div>
+    <div style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn secondary" id="btn-cancel-third">Cancelar</button>
+      <button class="btn" id="btn-save-third">Guardar</button>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop" id="modal-company">
+  <div class="modal">
+    <h3 style="margin-bottom:16px">Nueva empresa</h3>
+    <input id="input-company" placeholder="Nombre de la empresa" maxlength="40">
+    <div class="err" id="company-err"></div>
+    <div style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn secondary" id="btn-cancel-company">Cancelar</button>
+      <button class="btn" id="btn-save-company">Crear empresa</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const PERIOD = 'Agosto 2026';
+const NIT_RE = /\d{1,3}(?:\.\d{3}){2}(?:-\d)?|\b\d{9,10}\b/;
+const KEY = 'conciliasmart_final_v2'; // Llave actualizada
+
+const store = Object.create(null);
+let company = '', chart = null, toastTimer;
+const cur = () => store[company];
+const mk = co => ({ bank: [], ledger: [], rows: [], closed: false, names: {}, dir: [] });
+
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem(KEY));
+    if (d && d.store && Object.keys(d.store).length) {
+      const rev = a => (a || []).map(r => ({ ...r, d: r.d ? new Date(r.d) : null }));
+      Object.entries(d.store).forEach(([n, c]) => store[n] = { ...mk(n), ...c, bank: rev(c.bank), ledger: rev(c.ledger) });
+      company = store[d.company] ? d.company : Object.keys(store)[0];
+      return;
+    }
+  } catch (e) {}
+  company = ''; 
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify({ company, store })); } catch (e) {} }
+
+// --- UTILIDADES ---
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const money = n => '$ ' + Math.round(n).toLocaleString('es-CO');
+const nitKey = s => { const m = String(s).match(NIT_RE); return m ? m[0].replace(/\D/g, '').slice(0, 9) : ''; };
+const nitRaw = s => { const m = String(s).match(NIT_RE); return m ? m[0] : ''; };
+
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+function num(v) {
+  if (typeof v === 'number') return v;
+  let s = String(v ?? '').replace(/[^\d,.\-()]/g, '');
+  if (!s) return 0;
+  const neg = /^\(.*\)$/.test(s) || s.startsWith('-');
+  s = s.replace(/[()\-]/g, '');
+  const lc = s.lastIndexOf(','), ld = s.lastIndexOf('.');
+  if (lc > -1 && ld > -1) s = lc > ld ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+  else if (lc > -1) s = /,\d{1,2}$/.test(s) ? s.replace(',', '.') : s.replace(/,/g, '');
+  else if ((s.match(/\./g) || []).length > 1 || /\.\d{3}$/.test(s)) s = s.replace(/\./g, '');
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : (neg ? -n : n);
+}
+
+function toDate(v) {
+  if (typeof v === 'number' && v > 20000) return new Date(Math.round((v - 25569) * 864e5));
+  const m = String(v ?? '').match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+  if (!m) return null;
+  let y = +m[3]; if (y < 100) y += 2000;
+  return new Date(Date.UTC(y, +m[2] - 1, +m[1]));
+}
+const fmtDate = d => d ? `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${d.getUTCFullYear()}` : '—';
+const find = (r, re) => { const k = Object.keys(r).find(k => re.test(k.normalize('NFD').replace(/[\u0300-\u036f]/g, ''))); return k === undefined ? undefined : r[k]; };
+
+// NUEVA FUNCIÓN NORMALIZE (Lector inteligente)
+function normalize(r) {
+  let amt = 0;
+  let valDirecto = find(r, /^valor$|^monto$|^importe$|^amount$/i);
+  
+  if (valDirecto !== undefined) {
+    amt = num(valDirecto);
+  } else {
+    let entrada = find(r, /entrada/i);
+    let salida = find(r, /salida/i);
+    if (entrada !== undefined || salida !== undefined) {
+      amt = num(entrada) - num(salida);
+    } else {
+      let debito = find(r, /debito/i);
+      let credito = find(r, /credito/i);
+      amt = num(debito) - num(credito);
+    }
+  }
+
+  const d = toDate(find(r, /fecha|date/i));
+  let nit = String(find(r, /nit/i) ?? '').trim();
+  let nombre = String(find(r, /razon|nombre|tercero|beneficiario/i) ?? '').trim();
+  
+  if (!nombre) nombre = String(find(r, /descrip/i) ?? '').trim();
+  let t = (nit && nombre) ? `${nit} ${nombre}` : (nit || nombre || 'Sin tercero');
+
+  return { d, t, amt };
+}
+
+// --- CONCILIACIÓN ---
+function reconcile(silent) {
+  const c = cur();
+  if (!c || (!c.bank.length && !c.ledger.length)) { if (!silent) toast('Carga el extracto y la contabilidad primero.'); return; }
+  const tol = Math.max(0, +$('tol').value || 0);
+  const L = c.ledger.map(x => ({ ...x, used: false }));
+  const rows = [];
+  c.bank.forEach(b => {
+    let best = null, bestScore = Infinity, conflict = false;
+    L.forEach(l => {
+      if (l.used) return;
+      const diff = Math.abs(Math.abs(b.amt) - Math.abs(l.amt));
+      const days = b.d && l.d ? Math.abs(b.d - l.d) / 864e5 : 0;
+      if (diff > tol || days > 7) return;
+      const kb = nitKey(b.t), kl = nitKey(l.t), clash = !!(kb && kl && kb !== kl);
+      const score = diff + days * 100 + (clash ? 1e4 : 0);
+      if (score < bestScore) { bestScore = score; best = l; conflict = clash; }
+    });
+    if (best) best.used = true;
+    const diff = best ? Math.abs(Math.abs(b.amt) - Math.abs(best.amt)) : Math.abs(b.amt);
+    rows.push({ date: fmtDate(b.d || best?.d), t: b.t || best?.t || 'Sin tercero', t_ledger: best ? best.t : '', bank: Math.abs(b.amt), ledger: best ? Math.abs(best.amt) : 0, diff,
+      status: !best ? 'unmatched' : (diff === 0 && !conflict ? 'exact' : 'ai') });
+  });
+  L.filter(l => !l.used).forEach(l => rows.push({ date: fmtDate(l.d), t: l.t || 'Sin tercero', t_ledger: '', bank: 0, ledger: Math.abs(l.amt), diff: Math.abs(l.amt), status: 'unmatched' }));
+  c.rows = rows;
+  render();
+  if (!silent) toast('Conciliación ejecutada: ' + rows.length + ' movimientos.');
+}
+
+const LABEL = { exact: 'Conciliado exacto', ai: 'Sugerencia IA', unmatched: 'Sin conciliar' };
+const counts = () => {
+  if (!cur() || !cur().rows) return { exact: 0, ai: 0, unmatched: 0 };
+  return cur().rows.reduce((a, r) => (a[r.status]++, a), { exact: 0, ai: 0, unmatched: 0 });
+};
+
+// --- RENDERIZADO ---
+function render() {
+  const c = cur();
+  if (!c) {
+    $('table-reconciliation').querySelector('tbody').innerHTML = '<tr><td colspan="6" class="empty">Crea una nueva empresa en el panel izquierdo para comenzar.</td></tr>';
+    $('record-count').textContent = '0 movimientos';
+    $('summary').innerHTML = `<div><b>0</b>Conciliados</div><div><b>0</b>Sugerencias IA</div><div><b>0</b>Sin conciliar</div>`;
+    $('period-display').textContent = 'Sin empresa seleccionada';
+    if (chart) { chart.data.datasets[0].data = [0, 0, 0]; chart.update(); }
+    renderCompanies();
+    return; 
+  }
+
+  const f = $('filter').value;
+  const list = c.rows.map((r, i) => ({ r, i })).filter(x => f === 'all' || x.r.status === f);
+  $('table-reconciliation').querySelector('tbody').innerHTML = list.length ? list.map(({ r, i }) => `
+    <tr class="status-${r.status}">
+      <td>${esc(r.date)}</td><td>${esc(r.t)}</td>
+      <td class="r">${money(r.bank)}</td><td class="r">${money(r.ledger)}</td><td class="r">${money(r.diff)}</td>
+      <td><span class="badge ${r.status}">${LABEL[r.status]}</span>
+        ${r.status === 'ai' && !c.closed ? `<button class="btn small" data-approve="${i}">Aprobar</button>` : ''}</td>
+    </tr>`).join('') : '<tr><td colspan="6" class="empty">Carga el extracto y la contabilidad para comenzar.</td></tr>';
+  
+  $('record-count').textContent = `${c.rows.length} movimientos`;
+  const k = counts();
+  if (chart) { chart.data.datasets[0].data = [k.exact, k.ai, k.unmatched]; chart.update(); }
+  $('summary').innerHTML = `<div><b>${k.exact}</b>Conciliados</div><div><b>${k.ai}</b>Sugerencias IA</div><div><b>${k.unmatched}</b>Sin conciliar</div>`;
+  
+  const locked = c.closed;
+  ['btn-run-ai'].forEach(id => { if($(id)) $(id).disabled = locked; });
+  document.querySelectorAll('[data-pick]').forEach(b => b.disabled = locked);
+  $('btn-close-month').textContent = locked ? '🔓 Reabrir periodo' : '🔒 Bloquear y cerrar periodo';
+  $('period-display').textContent = `${company} / Periodo: ${PERIOD}${locked ? ' (cerrado)' : ''}`;
+  $('name-bank').textContent = c.names.bank ? '✔ ' + c.names.bank : '';
+  $('name-ledger').textContent = c.names.ledger ? '✔ ' + c.names.ledger : '';
+  
+  renderCompanies(); renderDirectory(); renderNitAlert(); save();
+}
+
+function renderCompanies() {
+  $('company-list').innerHTML = Object.keys(store).map(n => `<div class="company-row"><button class="company${n === company ? ' active' : ''}" data-company="${esc(n)}">${esc(n)}<small>${n === company ? 'Activa' : 'Configurada'}</small></button><button class="del" data-del="${esc(n)}">✕</button></div>`).join('');
+}
+function renderDirectory() {
+  if (!cur()) { $('table-directory').querySelector('tbody').innerHTML = ''; return; }
+  $('table-directory').querySelector('tbody').innerHTML = cur().dir.map(d =>
+    `<tr><td>${esc(d.name)}</td><td>${esc(d.nit)}</td><td>${esc(d.type)}</td><td><span class="badge exact">Activo</span></td></tr>`).join('');
+}
+function pendingNits() {
+  if (!cur()) return [];
+  const c = cur(), known = new Set(c.dir.map(d => nitKey(d.nit))), found = new Map();
+  [...c.bank, ...c.ledger].forEach(x => { const k = nitKey(x.t); if (k && !known.has(k) && !found.has(k)) found.set(k, nitRaw(x.t)); });
+  return [...found.values()];
+}
+function renderNitAlert() {
+  const p = pendingNits();
+  $('nit-alert').classList.toggle('hidden', !p.length);
+  if (p.length) $('nit-alert-text').textContent = p.length === 1 ? `Nuevo NIT detectado: ${p[0]}` : `${p.length} NITs nuevos detectados.`;
+}
+
+// --- ARCHIVOS ---
+function readFile(file, key) {
+  if (!file || !cur()) return;
+  if (typeof XLSX === 'undefined') return toast('No se pudo cargar la librería de Excel.');
+  if (cur().closed) return toast('El periodo está cerrado.');
+  const reader = new FileReader();
+  reader.onerror = () => toast('No se pudo leer el archivo.');
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' }).map(normalize).filter(r => r.amt !== 0);
+      if (!rows.length) return toast('No se encontraron movimientos.');
+      const c = cur(); c[key] = rows; c.names[key] = file.name;
+      c.bank.length && c.ledger.length ? reconcile(true) : render();
+      toast(`${rows.length} movimientos cargados.`);
+    } catch (err) { toast('El archivo no es válido.'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+function setupDrop(zoneId, inputId, key) {
+  const zone = $(zoneId), input = $(inputId);
+  input.addEventListener('change', e => { readFile(e.target.files[0], key); input.value = ''; });
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+  zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('over'); readFile(e.dataTransfer.files[0], key); });
+}
+
+// --- MODALES ---
+function openModal(nit = '') {
+  $('input-nit').value = nit; $('input-name').value = ''; $('modal-err').textContent = '';
+  $('modal-third-party').classList.add('open');
+  (nit ? $('input-name') : $('input-nit')).focus();
+}
+const closeModal = () => $('modal-third-party').classList.remove('open');
+function saveThird() {
+  if (!cur()) return;
+  const name = $('input-name').value.trim(), nit = $('input-nit').value.trim(), type = $('select-type').value;
+  const err = m => $('modal-err').textContent = m;
+  if (!name || !nit) return err('Escribe el NIT y la razón social.');
+  if (nitKey(nit).length < 9) return err('El NIT debe tener al menos 9 dígitos.');
+  if (cur().dir.some(d => nitKey(d.nit) === nitKey(nit))) return err('Ese NIT ya está en el directorio.');
+  cur().dir.push({ name, nit, type });
+  closeModal(); render(); toast('Tercero registrado.');
+}
+
+const closeCompanyModal = () => $('modal-company').classList.remove('open');
+function addCompany() {
+  const name = $('input-company').value.trim();
+  const err = m => $('company-err').textContent = m;
+  if (!name) return err('Escribe el nombre de la empresa.');
+  if (Object.keys(store).some(n => n.toLowerCase() === name.toLowerCase())) return err('Ya existe una empresa con ese nombre.');
+  store[name] = mk(name); company = name;
+  closeCompanyModal(); render(); toast('Empresa creada: ' + name);
+}
+function deleteCompany(n) {
+  if (Object.keys(store).length < 2) return toast('Debe quedar al menos una empresa.');
+  if (!confirm(`¿Eliminar "${n}" con todos sus datos?`)) return;
+  delete store[n];
+  if (company === n) company = Object.keys(store)[0] || '';
+  render(); toast('Empresa eliminada.');
+}
+
+// --- EXPORTAR Y CERRAR ---
+function exportExcel() {
+  const c = cur();
+  if (!c || !c.rows.length) return toast('No hay movimientos para exportar.');
+  const data = c.rows.map(r => ({ Fecha: r.date, Tercero: r.t, Banco: r.bank, Contabilidad: r.ledger, Diferencia: r.diff, Estado: LABEL[r.status] }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), 'Conciliación');
+  XLSX.writeFile(wb, `conciliacion_${company.replace(/\s+/g, '_')}.xlsx`);
+}
+function toggleClose() {
+  const c = cur();
+  if (!c) return;
+  if (!c.closed) {
+    const k = counts();
+    const msg = k.unmatched + k.ai ? `Hay pendientes. ¿Cerrar de todas formas?` : '¿Cerrar el periodo?';
+    if (!confirm(msg)) return;
+  }
+  c.closed = !c.closed; render();
+  toast(c.closed ? 'Periodo cerrado.' : 'Periodo reabierto.');
+}
+
+// --- LÓGICA DE USUARIOS Y TEMA ---
+function toggleAuthForms() {
+  $('form-login').classList.toggle('hidden');
+  $('form-register').classList.toggle('hidden');
+  $('login-err').textContent = ''; $('reg-err').textContent = '';
+}
+function registrarUsuario() {
+  const user = $('reg-user').value.trim(), pass = $('reg-pass').value.trim(), errorMsg = $('reg-err');
+  if (!user || !pass) { errorMsg.textContent = 'Llena todos los campos.'; return; }
+  if (pass.length < 4) { errorMsg.textContent = 'Mínimo 4 caracteres.'; return; }
+  let users = JSON.parse(localStorage.getItem('conciliasmart_users')) || [];
+  if (users.some(u => u.username.toLowerCase() === user.toLowerCase())) { errorMsg.textContent = 'Usuario en uso.'; return; }
+  users.push({ username: user, password: pass });
+  localStorage.setItem('conciliasmart_users', JSON.stringify(users));
+  $('reg-user').value = ''; $('reg-pass').value = '';
+  toggleAuthForms(); toast('¡Cuenta creada!'); $('login-user').value = user; 
+}
+function verificarLogin() {
+  const user = $('login-user').value.trim(), pass = $('login-pass').value.trim(), errorMsg = $('login-err');
+  let users = JSON.parse(localStorage.getItem('conciliasmart_users')) || [];
+  const validUser = users.find(u => u.username.toLowerCase() === user.toLowerCase() && u.password === pass);
+  if (validUser) {
+    $('login-screen').style.display = 'none';
+    $('current-username').textContent = validUser.username;
+    $('current-avatar').textContent = validUser.username.charAt(0).toUpperCase();
+    render(); toast('¡Bienvenido/a, ' + validUser.username + '!');
+  } else { errorMsg.textContent = 'Datos incorrectos.'; $('login-pass').value = ''; }
+}
+
+// MODO CLARO / OSCURO
+const themeBtn = $('btn-theme');
+function applyTheme(theme) {
+  if (theme === 'light') { document.body.classList.add('light-mode'); themeBtn.textContent = '☀️'; }
+  else { document.body.classList.remove('light-mode'); themeBtn.textContent = '🌙'; }
+}
+themeBtn.addEventListener('click', () => {
+  const isLight = document.body.classList.toggle('light-mode');
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  themeBtn.textContent = isLight ? '☀️' : '🌙';
+});
+
+// --- INICIO ---
+document.addEventListener('DOMContentLoaded', () => {
+  applyTheme(localStorage.getItem('theme') || 'dark');
+  load();
+  
+  chart = new Chart($('chart-stats').getContext('2d'), {
+    type: 'doughnut',
+    data: { labels: ['Coincidencias', 'Sugerencias IA', 'Diferencias'], datasets: [{ data: [0, 0, 0], backgroundColor: ['#10b981', '#06b6d4', '#f43f5e'], borderWidth: 0 }] },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: localStorage.getItem('theme') === 'light' ? '#111827' : '#9ca3af' } } } }
+  });
+
+  document.querySelectorAll('.nav-item').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.toggle('active', i === b));
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('hidden', v.id !== b.dataset.target));
+    $('view-title').textContent = b.textContent;
+  }));
+
+  $('company-list').addEventListener('click', e => {
+    const d = e.target.closest('[data-del]'); if (d) return deleteCompany(d.dataset.del);
+    const b = e.target.closest('.company'); if (!b) return;
+    company = b.dataset.company; render();
+  });
+  $('btn-new-company').addEventListener('click', () => { $('input-company').value = ''; $('company-err').textContent = ''; $('modal-company').classList.add('open'); $('input-company').focus(); });
+  $('btn-cancel-company').addEventListener('click', closeCompanyModal);
+  $('btn-save-company').addEventListener('click', addCompany);
+  $('modal-company').addEventListener('click', e => { if (e.target.id === 'modal-company') closeCompanyModal(); });
+
+  document.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => $(b.dataset.pick).click()));
+  setupDrop('drop-bank', 'file-bank', 'bank');
+  setupDrop('drop-ledger', 'file-ledger', 'ledger');
+
+  $('filter').addEventListener('change', render);
+  $('table-reconciliation').addEventListener('click', e => {
+    const b = e.target.closest('[data-approve]'); if (!b) return;
+    cur().rows[+b.dataset.approve].status = 'exact'; render();
+  });
+  $('btn-export').addEventListener('click', exportExcel);
+  $('btn-close-month').addEventListener('click', toggleClose);
+
+  $('btn-auto-add-nit').addEventListener('click', () => openModal(pendingNits()[0]));
+  $('btn-open-modal-third').addEventListener('click', () => openModal());
+  $('btn-cancel-third').addEventListener('click', closeModal);
+  $('btn-save-third').addEventListener('click', saveThird);
+  $('modal-third-party').addEventListener('click', e => { if (e.target.id === 'modal-third-party') closeModal(); });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeModal(); closeCompanyModal(); }
+    if (e.key === 'Enter' && $('modal-third-party').classList.contains('open')) saveThird();
+    if (e.key === 'Enter' && $('modal-company').classList.contains('open')) addCompany();
+  });
+
+  $('btn-run-ai').addEventListener('click', async () => {
+    if (!cur()) return;
+    reconcile(true); 
+    const c = cur();
+    const filasIA = c.rows.map((r, i) => ({ r, i })).filter(x => x.r.status === 'ai');
+    if (filasIA.length === 0) { toast('No hay movimientos pendientes.'); return; }
+    toast('La IA está analizando ' + filasIA.length + ' casos...');
+    $('btn-run-ai').textContent = '⏳ Analizando...';
+
+    for (let item of filasIA) {
+      try {
+        const respuesta = await fetch('http://127.0.0.1:8000/api/conciliar-ia', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ desc_banco: item.r.t, desc_contabilidad: item.r.t_ledger || item.r.t, valor: item.r.bank || item.r.ledger })
+        });
+        if (respuesta.ok) {
+          const datosIA = await respuesta.json();
+          if (datosIA.coincide && datosIA.confianza >= 80) c.rows[item.i].status = 'exact'; 
+          else c.rows[item.i].justificacion = datosIA.justificacion;
+        }
+      } catch (error) { toast('Error conectando con Python.'); break; }
+    }
+    $('btn-run-ai').textContent = '✨ Ejecutar conciliación IA';
+    render(); toast('Análisis de IA completado.');
+  });
+
+  $('btn-generar-reporte').addEventListener('click', async () => {
+    if (!cur()) return;
+    const k = counts();
+    $('btn-generar-reporte').textContent = '⏳ Escribiendo...';
+    try {
+      const res = await fetch('http://127.0.0.1:8000/api/generar-reporte', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conciliados: k.exact, sugerencias: k.ai, pendientes: k.unmatched, empresa: company })
+      });
+      const data = await res.json();
+      $('reporte-ia-texto').textContent = data.reporte;
+      $('reporte-ia-texto').style.color = 'var(--text)';
+      toast('¡Reporte generado por IA!');
+    } catch (e) { toast('Error conectando con el servidor.'); }
+    $('btn-generar-reporte').textContent = 'Generar Reporte IA';
+  });
+
+  render();
+});
+</script>
+</body>
+</html>
