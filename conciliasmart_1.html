@@ -602,7 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     for (let item of filasIA) {
       try {
-        const respuesta = await fetch('https://conciliasmart-xxxx.onrender.com/api/conciliar-ia', {
+        const respuesta = await fetch('https://conciliasmart.onrender.com/api/conciliar-ia', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ desc_banco: item.r.t, desc_contabilidad: item.r.t_ledger || item.r.t, valor: item.r.bank || item.r.ledger })
         });
@@ -622,7 +622,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const k = counts();
     $('btn-generar-reporte').textContent = '⏳ Escribiendo...';
     try {
-      const res = await fetch('https://conciliasmart-xxxx.onrender.com/api/generar-reporte', {
+      const res = await fetch('https://conciliasmart.onrender.com/api/generar-reporte', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ conciliados: k.exact, sugerencias: k.ai, pendientes: k.unmatched, empresa: company })
       });

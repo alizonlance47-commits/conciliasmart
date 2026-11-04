@@ -12,7 +12,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://resplendent-lebkuchen-7bca03.netlify.app"],
+    allow_origins=["https://resplendent-lebkuchen-2208.netlify.app"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
