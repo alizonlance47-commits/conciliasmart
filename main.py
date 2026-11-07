@@ -59,25 +59,3 @@ async def generar_reporte(datos: PeticionReporte):
         messages=[{"role": "user", "content": prompt}]
     )
     return {"reporte": respuesta.choices[0].message.content}
-
-# NUEVO ENDPOINT PARA LEER PDFs
-@app.post("/api/leer-pdf")
-async def leer_pdf(file: UploadFile = File(...)):
-    try:
-        contents = await file.read()
-        rows = []
-        with pdfplumber.open(io.BytesIO(contents)) as pdf:
-            for page in pdf.pages:
-                tables = page.extract_tables()
-                for table in tables:
-                    for row in table:
-                        # Busca filas con al menos 3 columnas (Fecha, Tercero, Valor)
-                        if row and len(row) >= 3:
-                            rows.append({
-                                "Fecha": row[0],
-                                "Tercero": row[1],
-                                "Valor": row[2]
-                            })
-        return {"status": "ok", "data": rows}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
