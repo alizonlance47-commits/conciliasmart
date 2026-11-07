@@ -152,16 +152,16 @@ tr.status-exact{background:var(--mint-bg)}tr.status-ai{background:var(--cyan-bg)
     <div class="uploads-grid">
       <div class="drop-zone" id="drop-bank">
         <strong>Extracto bancario</strong>
-        <p>Arrastra o selecciona el extracto en Excel/CSV/PDF</p>
+        <p>Arrastra o selecciona el extracto en Excel/CSV</p>
         <button class="btn" data-pick="file-bank">Cargar extracto</button>
-        <input type="file" id="file-bank" accept=".xlsx,.xls,.csv,.pdf" hidden>
+        <input type="file" id="file-bank" accept=".xlsx,.xls,.csv" hidden>
         <span class="file" id="name-bank"></span>
       </div>
       <div class="drop-zone" id="drop-ledger">
         <strong>Registros contables</strong>
-        <p>Arrastra o selecciona el libro auxiliar en Excel/CSV/PDF</p>
+        <p>Arrastra o selecciona el libro auxiliar en Excel/CSV</p>
         <button class="btn" data-pick="file-ledger">Cargar contabilidad</button>
-        <input type="file" id="file-ledger" accept=".xlsx,.xls,.csv,.pdf" hidden>
+        <input type="file" id="file-ledger" accept=".xlsx,.xls,.csv" hidden>
         <span class="file" id="name-ledger"></span>
       </div>
     </div>
@@ -267,7 +267,7 @@ tr.status-exact{background:var(--mint-bg)}tr.status-ai{background:var(--cyan-bg)
 <script>
 const $ = id => document.getElementById(id);
 const NIT_RE = /\d{1,3}(?:\.\d{3}){2}(?:-\d)?|\b\d{9,10}\b/;
-const KEY = 'conciliasmart_v4'; // Actualizado con nuevas funciones
+const KEY = 'conciliasmart_v4'; // Llave final
 
 const store = Object.create(null);
 let company = '', chart = null, toastTimer;
@@ -378,7 +378,6 @@ function reconcile(silent) {
       const kl = nitKey(l.t);
       const clash = !!(kb && kl && kb !== kl);
       
-      // Lógica para detectar abonos parciales (mismo NIT, valores diferentes)
       if (!clash && kb && kl) {
          if (diff > tol) isPartial = true; 
          const score = diff + days * 100; 
@@ -516,32 +515,10 @@ function renderNitAlert() {
   if (p.length) $('nit-alert-text').textContent = p.length === 1 ? `Nuevo NIT detectado: ${p[0]}` : `${p.length} NITs nuevos detectados.`;
 }
 
-// LECTURA DE ARCHIVOS Y PDF
-async function readFile(file, key) {
+function readFile(file, key) {
   const c = curPeriod();
   if (!file || !c) return;
   if (c.closed) return toast('El periodo está cerrado.');
-
-  if (file.name.toLowerCase().endsWith('.pdf')) {
-    toast('Leyendo PDF con el servidor...');
-    const formData = new FormData();
-    formData.append("file", file);
-    try {
-      const res = await fetch('https://conciliasmart.onrender.com/api/leer-pdf', {
-        method: 'POST', body: formData
-      });
-      const data = await res.json();
-      if (data.status === 'ok' && data.data.length > 0) {
-        const rows = data.data.map(normalize).filter(r => r.amt !== 0);
-        c[key] = rows; c.names[key] = file.name;
-        c.bank.length && c.ledger.length ? reconcile(true) : render();
-        toast(`✅ ${rows.length} movimientos extraídos del PDF`);
-      } else {
-        toast('No se encontraron tablas válidas en el PDF.');
-      }
-    } catch (error) { toast('Error conectando con el servidor para leer el PDF.'); }
-    return;
-  }
 
   if (typeof XLSX === 'undefined') return toast('No se pudo cargar la librería de Excel.');
   const reader = new FileReader();
@@ -681,7 +658,6 @@ document.addEventListener('DOMContentLoaded', () => {
     company = b.dataset.company; render();
   });
   
-  // Borrar tercero
   $('table-directory').addEventListener('click', e => {
     const btn = e.target.closest('[data-del-third]');
     if (!btn) return;

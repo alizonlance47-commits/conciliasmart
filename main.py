@@ -1,11 +1,9 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from openai import OpenAI
 from dotenv import load_dotenv
 import json
-import pdfplumber
-import io
 
 load_dotenv()
 client = OpenAI()
