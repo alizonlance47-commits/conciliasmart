@@ -7,23 +7,23 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-/* VARIABLES MODO OSCURO (Por defecto) */
 :root {
   --bg: #0b0f19; --panel: #131926; --panel2: #1c2536; --border: #2e394e;
   --text: #f3f4f6; --muted: #9ca3af;
   --primary: #801b38; --primary-hover: #a12348;
-  --mint: #10b981; --mint-bg: rgba(19, 139, 25, 0.15);
+  --mint: #10b981; --mint-bg: rgba(16,185,129,.15);
   --cyan: #06b6d4; --cyan-bg: rgba(6,182,212,.15);
   --wine: #f43f5e; --wine-bg: rgba(244,63,94,.15);
+  --orange: #f97316; --orange-bg: rgba(249,115,22,.15);
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
-/* VARIABLES MODO CLARO */
 body.light-mode {
   --bg: #f3f4f6; --panel: #ffffff; --panel2: #e5e7eb; --border: #d1d5db;
   --text: #111827; --muted: #6b7280;
   --mint: #059669; --mint-bg: rgba(5,150,105,.1);
   --cyan: #0891b2; --cyan-bg: rgba(8,145,178,.1);
   --wine: #e11d48; --wine-bg: rgba(225,29,72,.1);
+  --orange: #ea580c; --orange-bg: rgba(234,88,12,.1);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;transition:background .3s,color .3s}
@@ -71,10 +71,11 @@ table{width:100%;border-collapse:collapse;font-size:13px}
 th{background:var(--panel2);color:var(--muted);padding:12px 16px;text-align:left;font-size:11px;white-space:nowrap}
 td{padding:12px 16px;border-top:1px solid var(--border)}
 .r{text-align:right}
-tr.status-exact{background:var(--mint-bg)}tr.status-ai{background:var(--cyan-bg)}tr.status-unmatched{background:var(--wine-bg)}
+tr.status-exact{background:var(--mint-bg)}tr.status-ai{background:var(--cyan-bg)}tr.status-unmatched{background:var(--wine-bg)}tr.status-partial{background:var(--orange-bg)}
 .empty{text-align:center;color:var(--muted);padding:32px}
 .badge{display:inline-block;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;white-space:nowrap}
-.badge.exact{background:var(--mint);color:#fff}.badge.ai{background:var(--cyan);color:#000}.badge.unmatched{background:var(--wine);color:#fff}
+.badge.exact{background:var(--mint);color:#fff}.badge.ai{background:var(--cyan);color:#000}.badge.unmatched{background:var(--wine);color:#fff}.badge.partial{background:var(--orange);color:#fff}
+.badge.closed{background:#4b5563;color:#fff}.badge.open{background:var(--primary);color:#fff}
 .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;place-items:center;z-index:100}
 .modal-backdrop.open{display:grid}
 .modal{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:24px;width:min(450px,90vw)}
@@ -128,7 +129,14 @@ tr.status-exact{background:var(--mint-bg)}tr.status-ai{background:var(--cyan-bg)
 </aside>
 <main>
   <header>
-    <div><h1 id="view-title">Mesa de Conciliación</h1><p id="period-display"></p></div>
+    <div>
+      <h1 id="view-title">Mesa de Conciliación</h1>
+      <div style="display:flex; align-items:center; gap:10px; margin-top:5px;">
+        <p id="period-display" style="margin:0;"></p>
+        <select id="period-selector" style="padding:4px 8px; font-size:11px; width:auto; border-radius:4px;"></select>
+        <button class="btn small" id="btn-add-period" style="padding:4px 8px; font-size:11px; background:var(--cyan); color:#000;">+ Nuevo Periodo</button>
+      </div>
+    </div>
     <div class="user-profile">
       <button class="theme-btn" id="btn-theme" title="Cambiar tema">🌙</button>
       <span id="current-username">Administrador</span>
@@ -144,22 +152,22 @@ tr.status-exact{background:var(--mint-bg)}tr.status-ai{background:var(--cyan-bg)
     <div class="uploads-grid">
       <div class="drop-zone" id="drop-bank">
         <strong>Extracto bancario</strong>
-        <p>Arrastra o selecciona el extracto en Excel/CSV</p>
+        <p>Arrastra o selecciona el extracto en Excel/CSV/PDF</p>
         <button class="btn" data-pick="file-bank">Cargar extracto</button>
-        <input type="file" id="file-bank" accept=".xlsx,.xls,.csv" hidden>
+        <input type="file" id="file-bank" accept=".xlsx,.xls,.csv,.pdf" hidden>
         <span class="file" id="name-bank"></span>
       </div>
       <div class="drop-zone" id="drop-ledger">
         <strong>Registros contables</strong>
-        <p>Arrastra o selecciona el libro auxiliar contable</p>
+        <p>Arrastra o selecciona el libro auxiliar en Excel/CSV/PDF</p>
         <button class="btn" data-pick="file-ledger">Cargar contabilidad</button>
-        <input type="file" id="file-ledger" accept=".xlsx,.xls,.csv" hidden>
+        <input type="file" id="file-ledger" accept=".xlsx,.xls,.csv,.pdf" hidden>
         <span class="file" id="name-ledger"></span>
       </div>
     </div>
     <div class="toolbar">
       <label>Tolerancia ($) <input type="number" id="tol" value="5000" min="0" step="500"></label>
-      <label>Ver <select id="filter"><option value="all">Todos</option><option value="exact">Conciliados</option><option value="ai">Sugerencias IA</option><option value="unmatched">Sin conciliar</option></select></label>
+      <label>Ver <select id="filter"><option value="all">Todos</option><option value="exact">Conciliados</option><option value="ai">Sugerencias IA</option><option value="partial">Abonos Parciales</option><option value="unmatched">Sin conciliar</option></select></label>
       <button class="btn" id="btn-run-ai">✨ Ejecutar conciliación IA</button>
     </div>
     <div class="workspace-grid">
@@ -180,14 +188,37 @@ tr.status-exact{background:var(--mint-bg)}tr.status-ai{background:var(--cyan-bg)
     <div class="panel">
       <div class="panel-head"><h3>Directorio de terceros y NITs</h3><button class="btn" id="btn-open-modal-third">+ Nuevo tercero</button></div>
       <div class="table-wrap"><table id="table-directory">
-        <thead><tr><th>Razón social</th><th>NIT</th><th>Tipo</th><th>Estado</th></tr></thead><tbody></tbody></table></div>
+        <thead><tr><th>Razón social</th><th>NIT</th><th>Tipo</th><th>Saldo Neto</th><th>Acción</th></tr></thead><tbody></tbody></table></div>
     </div>
   </section>
 
   <section class="content view hidden" id="view-reports">
+    
+    <div class="panel" style="margin-bottom: 20px;">
+      <div class="panel-head">
+        <h3>Historial de Periodos</h3>
+        <span>Registro de todos los meses conciliados</span>
+      </div>
+      <div class="table-wrap">
+        <table id="table-history">
+          <thead>
+            <tr>
+              <th>Periodo</th>
+              <th>Estado</th>
+              <th class="r">Conciliados</th>
+              <th class="r">Sugerencias IA</th>
+              <th class="r">Sin conciliar</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="panel" style="padding:24px; margin-bottom: 20px;">
-      <h3>Cierre mensual y reportes</h3>
-      <p style="color:var(--muted);margin:8px 0;font-size:13px">Exporta el resultado o confirma el cierre contable del periodo.</p>
+      <h3>Cierre del Periodo Actual</h3>
+      <p style="color:var(--muted);margin:8px 0;font-size:13px">Exporta el resultado o confirma el cierre contable del periodo seleccionado.</p>
       <div class="summary" id="summary"></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <button class="btn secondary" id="btn-export">Exportar a Excel</button>
@@ -235,30 +266,42 @@ tr.status-exact{background:var(--mint-bg)}tr.status-ai{background:var(--cyan-bg)
 
 <script>
 const $ = id => document.getElementById(id);
-const PERIOD = 'Agosto 2026';
 const NIT_RE = /\d{1,3}(?:\.\d{3}){2}(?:-\d)?|\b\d{9,10}\b/;
-const KEY = 'conciliasmart_final_v2'; // Llave actualizada
+const KEY = 'conciliasmart_v4'; // Actualizado con nuevas funciones
 
 const store = Object.create(null);
 let company = '', chart = null, toastTimer;
-const cur = () => store[company];
-const mk = co => ({ bank: [], ledger: [], rows: [], closed: false, names: {}, dir: [] });
+const curCo = () => store[company];
+const curPeriod = () => store[company]?.periods[store[company]?.activePeriod];
+
+const mk = co => ({ 
+  periods: { 'Agosto 2026': { bank: [], ledger: [], rows: [], closed: false, names: {} } }, 
+  activePeriod: 'Agosto 2026', 
+  dir: [] 
+});
 
 function load() {
   try {
     const d = JSON.parse(localStorage.getItem(KEY));
     if (d && d.store && Object.keys(d.store).length) {
       const rev = a => (a || []).map(r => ({ ...r, d: r.d ? new Date(r.d) : null }));
-      Object.entries(d.store).forEach(([n, c]) => store[n] = { ...mk(n), ...c, bank: rev(c.bank), ledger: rev(c.ledger) });
+      Object.entries(d.store).forEach(([n, c]) => {
+          if(c.periods) {
+              Object.values(c.periods).forEach(p => {
+                  p.bank = rev(p.bank);
+                  p.ledger = rev(p.ledger);
+              });
+          }
+          store[n] = { ...mk(n), ...c };
+      });
       company = store[d.company] ? d.company : Object.keys(store)[0];
       return;
     }
-  } catch (e) {}
+  } catch (e) { console.error(e); }
   company = ''; 
 }
 function save() { try { localStorage.setItem(KEY, JSON.stringify({ company, store })); } catch (e) {} }
 
-// --- UTILIDADES ---
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const money = n => '$ ' + Math.round(n).toLocaleString('es-CO');
 const nitKey = s => { const m = String(s).match(NIT_RE); return m ? m[0].replace(/\D/g, '').slice(0, 9) : ''; };
@@ -293,83 +336,96 @@ function toDate(v) {
 const fmtDate = d => d ? `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${d.getUTCFullYear()}` : '—';
 const find = (r, re) => { const k = Object.keys(r).find(k => re.test(k.normalize('NFD').replace(/[\u0300-\u036f]/g, ''))); return k === undefined ? undefined : r[k]; };
 
-// NUEVA FUNCIÓN NORMALIZE (Lector inteligente)
 function normalize(r) {
   let amt = 0;
   let valDirecto = find(r, /^valor$|^monto$|^importe$|^amount$/i);
-  
   if (valDirecto !== undefined) {
     amt = num(valDirecto);
   } else {
-    let entrada = find(r, /entrada/i);
-    let salida = find(r, /salida/i);
+    let entrada = find(r, /entrada/i), salida = find(r, /salida/i);
     if (entrada !== undefined || salida !== undefined) {
       amt = num(entrada) - num(salida);
     } else {
-      let debito = find(r, /debito/i);
-      let credito = find(r, /credito/i);
+      let debito = find(r, /debito/i), credito = find(r, /credito/i);
       amt = num(debito) - num(credito);
     }
   }
-
   const d = toDate(find(r, /fecha|date/i));
   let nit = String(find(r, /nit/i) ?? '').trim();
   let nombre = String(find(r, /razon|nombre|tercero|beneficiario/i) ?? '').trim();
-  
   if (!nombre) nombre = String(find(r, /descrip/i) ?? '').trim();
   let t = (nit && nombre) ? `${nit} ${nombre}` : (nit || nombre || 'Sin tercero');
-
   return { d, t, amt };
 }
 
-// --- CONCILIACIÓN ---
 function reconcile(silent) {
-  const c = cur();
+  const c = curPeriod();
   if (!c || (!c.bank.length && !c.ledger.length)) { if (!silent) toast('Carga el extracto y la contabilidad primero.'); return; }
+  if (c.closed) { if (!silent) toast('El periodo está cerrado.'); return; }
+  
   const tol = Math.max(0, +$('tol').value || 0);
   const L = c.ledger.map(x => ({ ...x, used: false }));
   const rows = [];
+  
   c.bank.forEach(b => {
-    let best = null, bestScore = Infinity, conflict = false;
+    let best = null, bestScore = Infinity, conflict = false, isPartial = false;
+    const kb = nitKey(b.t);
+
     L.forEach(l => {
       if (l.used) return;
       const diff = Math.abs(Math.abs(b.amt) - Math.abs(l.amt));
       const days = b.d && l.d ? Math.abs(b.d - l.d) / 864e5 : 0;
-      if (diff > tol || days > 7) return;
-      const kb = nitKey(b.t), kl = nitKey(l.t), clash = !!(kb && kl && kb !== kl);
-      const score = diff + days * 100 + (clash ? 1e4 : 0);
-      if (score < bestScore) { bestScore = score; best = l; conflict = clash; }
+      const kl = nitKey(l.t);
+      const clash = !!(kb && kl && kb !== kl);
+      
+      // Lógica para detectar abonos parciales (mismo NIT, valores diferentes)
+      if (!clash && kb && kl) {
+         if (diff > tol) isPartial = true; 
+         const score = diff + days * 100; 
+         if (score < bestScore) { bestScore = score; best = l; conflict = clash; }
+      } else if (diff <= tol && days <= 7 && !clash) {
+         if (diff < bestScore) { bestScore = diff; best = l; conflict = clash; isPartial = false; }
+      }
     });
+
     if (best) best.used = true;
     const diff = best ? Math.abs(Math.abs(b.amt) - Math.abs(best.amt)) : Math.abs(b.amt);
+    
+    let status = 'unmatched';
+    if (best) {
+        if (diff <= tol && !conflict) status = 'exact';
+        else if (isPartial) status = 'partial';
+        else status = 'ai';
+    }
+
     rows.push({ date: fmtDate(b.d || best?.d), t: b.t || best?.t || 'Sin tercero', t_ledger: best ? best.t : '', bank: Math.abs(b.amt), ledger: best ? Math.abs(best.amt) : 0, diff,
-      status: !best ? 'unmatched' : (diff === 0 && !conflict ? 'exact' : 'ai') });
+      status: status });
   });
+  
   L.filter(l => !l.used).forEach(l => rows.push({ date: fmtDate(l.d), t: l.t || 'Sin tercero', t_ledger: '', bank: 0, ledger: Math.abs(l.amt), diff: Math.abs(l.amt), status: 'unmatched' }));
   c.rows = rows;
   render();
   if (!silent) toast('Conciliación ejecutada: ' + rows.length + ' movimientos.');
 }
 
-const LABEL = { exact: 'Conciliado exacto', ai: 'Sugerencia IA', unmatched: 'Sin conciliar' };
-const counts = () => {
-  if (!cur() || !cur().rows) return { exact: 0, ai: 0, unmatched: 0 };
-  return cur().rows.reduce((a, r) => (a[r.status]++, a), { exact: 0, ai: 0, unmatched: 0 });
+const LABEL = { exact: 'Conciliado exacto', ai: 'Sugerencia IA', unmatched: 'Sin conciliar', partial: 'Abono Parcial' };
+const counts = (periodData) => {
+  if (!periodData || !periodData.rows) return { exact: 0, ai: 0, unmatched: 0, partial: 0 };
+  return periodData.rows.reduce((a, r) => (a[r.status]++, a), { exact: 0, ai: 0, unmatched: 0, partial: 0 });
 };
 
-// --- RENDERIZADO ---
 function render() {
-  const c = cur();
+  const cCo = curCo();
+  const c = curPeriod();
+  
   if (!c) {
-    $('table-reconciliation').querySelector('tbody').innerHTML = '<tr><td colspan="6" class="empty">Crea una nueva empresa en el panel izquierdo para comenzar.</td></tr>';
-    $('record-count').textContent = '0 movimientos';
-    $('summary').innerHTML = `<div><b>0</b>Conciliados</div><div><b>0</b>Sugerencias IA</div><div><b>0</b>Sin conciliar</div>`;
-    $('period-display').textContent = 'Sin empresa seleccionada';
-    if (chart) { chart.data.datasets[0].data = [0, 0, 0]; chart.update(); }
-    renderCompanies();
+    $('table-reconciliation').querySelector('tbody').innerHTML = '<tr><td colspan="6" class="empty">Selecciona o crea una empresa.</td></tr>';
     return; 
   }
 
+  const ps = $('period-selector');
+  ps.innerHTML = Object.keys(cCo.periods).map(p => `<option value="${p}" ${p === cCo.activePeriod ? 'selected' : ''}>${p}</option>`).join('');
+  
   const f = $('filter').value;
   const list = c.rows.map((r, i) => ({ r, i })).filter(x => f === 'all' || x.r.status === f);
   $('table-reconciliation').querySelector('tbody').innerHTML = list.length ? list.map(({ r, i }) => `
@@ -377,11 +433,12 @@ function render() {
       <td>${esc(r.date)}</td><td>${esc(r.t)}</td>
       <td class="r">${money(r.bank)}</td><td class="r">${money(r.ledger)}</td><td class="r">${money(r.diff)}</td>
       <td><span class="badge ${r.status}">${LABEL[r.status]}</span>
+        ${r.status === 'partial' ? `<br><small style="color:var(--orange)">Saldo pendiente: ${money(r.diff)}</small>` : ''}
         ${r.status === 'ai' && !c.closed ? `<button class="btn small" data-approve="${i}">Aprobar</button>` : ''}</td>
     </tr>`).join('') : '<tr><td colspan="6" class="empty">Carga el extracto y la contabilidad para comenzar.</td></tr>';
   
   $('record-count').textContent = `${c.rows.length} movimientos`;
-  const k = counts();
+  const k = counts(c);
   if (chart) { chart.data.datasets[0].data = [k.exact, k.ai, k.unmatched]; chart.update(); }
   $('summary').innerHTML = `<div><b>${k.exact}</b>Conciliados</div><div><b>${k.ai}</b>Sugerencias IA</div><div><b>${k.unmatched}</b>Sin conciliar</div>`;
   
@@ -389,24 +446,67 @@ function render() {
   ['btn-run-ai'].forEach(id => { if($(id)) $(id).disabled = locked; });
   document.querySelectorAll('[data-pick]').forEach(b => b.disabled = locked);
   $('btn-close-month').textContent = locked ? '🔓 Reabrir periodo' : '🔒 Bloquear y cerrar periodo';
-  $('period-display').textContent = `${company} / Periodo: ${PERIOD}${locked ? ' (cerrado)' : ''}`;
+  $('period-display').textContent = `${company}`;
   $('name-bank').textContent = c.names.bank ? '✔ ' + c.names.bank : '';
   $('name-ledger').textContent = c.names.ledger ? '✔ ' + c.names.ledger : '';
   
-  renderCompanies(); renderDirectory(); renderNitAlert(); save();
+  renderCompanies(); renderDirectory(); renderNitAlert(); renderHistory(); save();
+}
+
+function renderHistory() {
+  const cCo = curCo();
+  if (!cCo) return;
+  $('table-history').querySelector('tbody').innerHTML = Object.entries(cCo.periods).map(([name, data]) => {
+    const k = counts(data);
+    const isCurrent = name === cCo.activePeriod;
+    const stateBadge = data.closed ? '<span class="badge closed">Cerrado</span>' : '<span class="badge open">Abierto</span>';
+    return `<tr>
+      <td>${esc(name)} ${isCurrent ? '(Actual)' : ''}</td>
+      <td>${stateBadge}</td>
+      <td class="r">${k.exact}</td>
+      <td class="r">${k.ai}</td>
+      <td class="r">${k.unmatched}</td>
+      <td>${isCurrent ? '---' : `<button class="btn small secondary" data-select-period="${name}">Ver</button>`}</td>
+    </tr>`;
+  }).join('');
 }
 
 function renderCompanies() {
   $('company-list').innerHTML = Object.keys(store).map(n => `<div class="company-row"><button class="company${n === company ? ' active' : ''}" data-company="${esc(n)}">${esc(n)}<small>${n === company ? 'Activa' : 'Configurada'}</small></button><button class="del" data-del="${esc(n)}">✕</button></div>`).join('');
 }
+
 function renderDirectory() {
-  if (!cur()) { $('table-directory').querySelector('tbody').innerHTML = ''; return; }
-  $('table-directory').querySelector('tbody').innerHTML = cur().dir.map(d =>
-    `<tr><td>${esc(d.name)}</td><td>${esc(d.nit)}</td><td>${esc(d.type)}</td><td><span class="badge exact">Activo</span></td></tr>`).join('');
+  if (!curCo()) { $('table-directory').querySelector('tbody').innerHTML = ''; return; }
+  const c = curPeriod();
+  const saldos = {};
+  if (c) {
+    [...c.bank, ...c.ledger].forEach(mov => {
+      const k = nitKey(mov.t);
+      if (!k) return;
+      if (!saldos[k]) saldos[k] = 0;
+      saldos[k] += mov.amt; 
+    });
+  }
+
+  $('table-directory').querySelector('tbody').innerHTML = curCo().dir.map((d, i) => {
+    const k = nitKey(d.nit);
+    const saldoNeto = saldos[k] || 0;
+    const colorSaldo = saldoNeto === 0 ? 'var(--muted)' : (saldoNeto > 0 ? 'var(--mint)' : 'var(--wine)');
+    
+    return `<tr>
+      <td>${esc(d.name)}</td>
+      <td>${esc(d.nit)}</td>
+      <td>${esc(d.type)}</td>
+      <td style="font-weight:bold; color:${colorSaldo}">${money(saldoNeto)}</td>
+      <td><button class="del" data-del-third="${i}" title="Eliminar tercero">✕</button></td>
+    </tr>`;
+  }).join('');
 }
+
 function pendingNits() {
-  if (!cur()) return [];
-  const c = cur(), known = new Set(c.dir.map(d => nitKey(d.nit))), found = new Map();
+  const c = curPeriod();
+  if (!c || !curCo()) return [];
+  const known = new Set(curCo().dir.map(d => nitKey(d.nit))), found = new Map();
   [...c.bank, ...c.ledger].forEach(x => { const k = nitKey(x.t); if (k && !known.has(k) && !found.has(k)) found.set(k, nitRaw(x.t)); });
   return [...found.values()];
 }
@@ -416,11 +516,34 @@ function renderNitAlert() {
   if (p.length) $('nit-alert-text').textContent = p.length === 1 ? `Nuevo NIT detectado: ${p[0]}` : `${p.length} NITs nuevos detectados.`;
 }
 
-// --- ARCHIVOS ---
-function readFile(file, key) {
-  if (!file || !cur()) return;
+// LECTURA DE ARCHIVOS Y PDF
+async function readFile(file, key) {
+  const c = curPeriod();
+  if (!file || !c) return;
+  if (c.closed) return toast('El periodo está cerrado.');
+
+  if (file.name.toLowerCase().endsWith('.pdf')) {
+    toast('Leyendo PDF con el servidor...');
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const res = await fetch('https://conciliasmart.onrender.com/api/leer-pdf', {
+        method: 'POST', body: formData
+      });
+      const data = await res.json();
+      if (data.status === 'ok' && data.data.length > 0) {
+        const rows = data.data.map(normalize).filter(r => r.amt !== 0);
+        c[key] = rows; c.names[key] = file.name;
+        c.bank.length && c.ledger.length ? reconcile(true) : render();
+        toast(`✅ ${rows.length} movimientos extraídos del PDF`);
+      } else {
+        toast('No se encontraron tablas válidas en el PDF.');
+      }
+    } catch (error) { toast('Error conectando con el servidor para leer el PDF.'); }
+    return;
+  }
+
   if (typeof XLSX === 'undefined') return toast('No se pudo cargar la librería de Excel.');
-  if (cur().closed) return toast('El periodo está cerrado.');
   const reader = new FileReader();
   reader.onerror = () => toast('No se pudo leer el archivo.');
   reader.onload = e => {
@@ -428,7 +551,7 @@ function readFile(file, key) {
       const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' }).map(normalize).filter(r => r.amt !== 0);
       if (!rows.length) return toast('No se encontraron movimientos.');
-      const c = cur(); c[key] = rows; c.names[key] = file.name;
+      c[key] = rows; c.names[key] = file.name;
       c.bank.length && c.ledger.length ? reconcile(true) : render();
       toast(`${rows.length} movimientos cargados.`);
     } catch (err) { toast('El archivo no es válido.'); }
@@ -443,7 +566,6 @@ function setupDrop(zoneId, inputId, key) {
   zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('over'); readFile(e.dataTransfer.files[0], key); });
 }
 
-// --- MODALES ---
 function openModal(nit = '') {
   $('input-nit').value = nit; $('input-name').value = ''; $('modal-err').textContent = '';
   $('modal-third-party').classList.add('open');
@@ -451,13 +573,13 @@ function openModal(nit = '') {
 }
 const closeModal = () => $('modal-third-party').classList.remove('open');
 function saveThird() {
-  if (!cur()) return;
+  if (!curCo()) return;
   const name = $('input-name').value.trim(), nit = $('input-nit').value.trim(), type = $('select-type').value;
   const err = m => $('modal-err').textContent = m;
   if (!name || !nit) return err('Escribe el NIT y la razón social.');
   if (nitKey(nit).length < 9) return err('El NIT debe tener al menos 9 dígitos.');
-  if (cur().dir.some(d => nitKey(d.nit) === nitKey(nit))) return err('Ese NIT ya está en el directorio.');
-  cur().dir.push({ name, nit, type });
+  if (curCo().dir.some(d => nitKey(d.nit) === nitKey(nit))) return err('Ese NIT ya está en el directorio.');
+  curCo().dir.push({ name, nit, type });
   closeModal(); render(); toast('Tercero registrado.');
 }
 
@@ -478,20 +600,19 @@ function deleteCompany(n) {
   render(); toast('Empresa eliminada.');
 }
 
-// --- EXPORTAR Y CERRAR ---
 function exportExcel() {
-  const c = cur();
+  const c = curPeriod();
   if (!c || !c.rows.length) return toast('No hay movimientos para exportar.');
   const data = c.rows.map(r => ({ Fecha: r.date, Tercero: r.t, Banco: r.bank, Contabilidad: r.ledger, Diferencia: r.diff, Estado: LABEL[r.status] }));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), 'Conciliación');
-  XLSX.writeFile(wb, `conciliacion_${company.replace(/\s+/g, '_')}.xlsx`);
+  XLSX.writeFile(wb, `conciliacion_${company.replace(/\s+/g, '_')}_${curCo().activePeriod.replace(/\s+/g, '_')}.xlsx`);
 }
 function toggleClose() {
-  const c = cur();
+  const c = curPeriod();
   if (!c) return;
   if (!c.closed) {
-    const k = counts();
+    const k = counts(c);
     const msg = k.unmatched + k.ai ? `Hay pendientes. ¿Cerrar de todas formas?` : '¿Cerrar el periodo?';
     if (!confirm(msg)) return;
   }
@@ -499,7 +620,6 @@ function toggleClose() {
   toast(c.closed ? 'Periodo cerrado.' : 'Periodo reabierto.');
 }
 
-// --- LÓGICA DE USUARIOS Y TEMA ---
 function toggleAuthForms() {
   $('form-login').classList.toggle('hidden');
   $('form-register').classList.toggle('hidden');
@@ -528,7 +648,6 @@ function verificarLogin() {
   } else { errorMsg.textContent = 'Datos incorrectos.'; $('login-pass').value = ''; }
 }
 
-// MODO CLARO / OSCURO
 const themeBtn = $('btn-theme');
 function applyTheme(theme) {
   if (theme === 'light') { document.body.classList.add('light-mode'); themeBtn.textContent = '☀️'; }
@@ -540,7 +659,6 @@ themeBtn.addEventListener('click', () => {
   themeBtn.textContent = isLight ? '☀️' : '🌙';
 });
 
-// --- INICIO ---
 document.addEventListener('DOMContentLoaded', () => {
   applyTheme(localStorage.getItem('theme') || 'dark');
   load();
@@ -562,10 +680,46 @@ document.addEventListener('DOMContentLoaded', () => {
     const b = e.target.closest('.company'); if (!b) return;
     company = b.dataset.company; render();
   });
+  
+  // Borrar tercero
+  $('table-directory').addEventListener('click', e => {
+    const btn = e.target.closest('[data-del-third]');
+    if (!btn) return;
+    const index = parseInt(btn.dataset.delThird);
+    if (confirm('¿Estás seguro de eliminar este tercero?')) {
+      curCo().dir.splice(index, 1);
+      render();
+      toast('Tercero eliminado correctamente.');
+    }
+  });
+
   $('btn-new-company').addEventListener('click', () => { $('input-company').value = ''; $('company-err').textContent = ''; $('modal-company').classList.add('open'); $('input-company').focus(); });
   $('btn-cancel-company').addEventListener('click', closeCompanyModal);
   $('btn-save-company').addEventListener('click', addCompany);
   $('modal-company').addEventListener('click', e => { if (e.target.id === 'modal-company') closeCompanyModal(); });
+
+  $('period-selector').addEventListener('change', (e) => {
+    const cCo = curCo();
+    if (cCo) { cCo.activePeriod = e.target.value; render(); }
+  });
+  $('btn-add-period').addEventListener('click', () => {
+    const cCo = curCo();
+    if (!cCo) return toast('Primero crea o selecciona una empresa.');
+    const newPeriod = prompt("Escribe el nombre del nuevo periodo (ej. Septiembre 2026):");
+    if (!newPeriod) return;
+    if (cCo.periods[newPeriod]) return toast('Ese periodo ya existe.');
+    cCo.periods[newPeriod] = { bank: [], ledger: [], rows: [], closed: false, names: {} };
+    cCo.activePeriod = newPeriod;
+    render(); toast('Periodo creado: ' + newPeriod);
+  });
+  $('table-history').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-select-period]');
+    if (btn) {
+      curCo().activePeriod = btn.dataset.selectPeriod;
+      render();
+      document.querySelector('.nav-item[data-target="view-reconciliation"]').click();
+    }
+  });
 
   document.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => $(b.dataset.pick).click()));
   setupDrop('drop-bank', 'file-bank', 'bank');
@@ -574,7 +728,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('filter').addEventListener('change', render);
   $('table-reconciliation').addEventListener('click', e => {
     const b = e.target.closest('[data-approve]'); if (!b) return;
-    cur().rows[+b.dataset.approve].status = 'exact'; render();
+    curPeriod().rows[+b.dataset.approve].status = 'exact'; render();
   });
   $('btn-export').addEventListener('click', exportExcel);
   $('btn-close-month').addEventListener('click', toggleClose);
@@ -592,9 +746,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('btn-run-ai').addEventListener('click', async () => {
-    if (!cur()) return;
+    const c = curPeriod();
+    if (!c) return;
     reconcile(true); 
-    const c = cur();
     const filasIA = c.rows.map((r, i) => ({ r, i })).filter(x => x.r.status === 'ai');
     if (filasIA.length === 0) { toast('No hay movimientos pendientes.'); return; }
     toast('La IA está analizando ' + filasIA.length + ' casos...');
@@ -611,15 +765,16 @@ document.addEventListener('DOMContentLoaded', () => {
           if (datosIA.coincide && datosIA.confianza >= 80) c.rows[item.i].status = 'exact'; 
           else c.rows[item.i].justificacion = datosIA.justificacion;
         }
-      } catch (error) { toast('Error conectando con Python.'); break; }
+      } catch (error) { toast('Error conectando con Python. ¿Sigue encendido?'); break; }
     }
     $('btn-run-ai').textContent = '✨ Ejecutar conciliación IA';
     render(); toast('Análisis de IA completado.');
   });
 
   $('btn-generar-reporte').addEventListener('click', async () => {
-    if (!cur()) return;
-    const k = counts();
+    const c = curPeriod();
+    if (!c) return;
+    const k = counts(c);
     $('btn-generar-reporte').textContent = '⏳ Escribiendo...';
     try {
       const res = await fetch('https://conciliasmart.onrender.com/api/generar-reporte', {
